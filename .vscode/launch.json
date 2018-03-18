@@ -4,18 +4,28 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
-            "name": "mingw-gcc64 (gdb) Launch",
+            "name": "(gdb) Launch 64x",
             "type": "cppdbg",
             "request": "launch",
-            "program": "enter program name, for example ${workspaceFolder}/a.exe",
-            "args": [],
+            "program": "${workspaceRoot}/scripts/FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "args": ["-y", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/test_nasa",
             "environment": [],
             "externalConsole": true,
             "MIMode": "gdb",
-            "miDebuggerPath": "/path/to/gdb",
+            "miDebuggerPath": "C:/msys64/mingw64/bin/gdb.exe",
+            "internalConsoleOptions": "openOnSessionStart",
+            "additionalSOLibSearchPath": "${workspaceFolder}/scripts/FFmpeg-mingw_gcc_x64-debug;${workspaceFolder}/scripts/FFmpeg-mingw_gcc_x64-debug/fftools",
+            "logging": {
+                "engineLogging": true
+            },
+            "sourceFileMap": {
+                "/mnt/c/work/FFmpeg_dev/scripts/FFmpeg-mingw_gcc_x64-debug/src": "${workspaceFolder}/FFmpeg",
+                "/mnt/c/work/FFmpeg_dev/scripts/FFmpeg-mingw_gcc_x64-debug": "${workspaceFolder}/FFmpeg"
+            },
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

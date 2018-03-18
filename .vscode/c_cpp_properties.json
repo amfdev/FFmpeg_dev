@@ -52,7 +52,8 @@
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/shared",
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/winrt",
                 "${workspaceRoot}",
-                "${workspaceRoot}/FFmpeg"
+                "${workspaceRoot}/FFmpeg",
+                "${workspaceRoot}/scripts/FFmpeg-mingw_gcc_x64-debug"
             ],
             "defines": [
                 "_DEBUG",
@@ -80,7 +81,7 @@
                 "C:/ubuntu_fs/usr/mingw-w64/toolchain-x86_64/x86_64-w64-mingw32/include",
                 "C:/ubuntu_fs/usr/mingw-w64/toolchain-x86_64/lib/gcc/x86_64-w64-mingw32/5.5.0/include",
                 "${workspaceRoot}/../thirdparty/libs/AMF/include",
-                "C:/work/FFmpeg_ws/FFmpeg_redist/mingw_gcc_x64/include",
+                "${workspaceRoot}/scripts/FFmpeg-mingw_gcc_x64-debug",
                 "${workspaceRoot}/FFmpeg"
             ],
             "defines": [
@@ -92,14 +93,13 @@
                     "C:/ubuntu_fs/usr/mingw-w64/toolchain-x86_64/x86_64-w64-mingw32/include",
                     "C:/ubuntu_fs/usr/mingw-w64/toolchain-x86_64/lib/gcc/x86_64-w64-mingw32/5.5.0/include",
                     "${workspaceRoot}/../thirdparty/libs/AMF/include",
-                    "C:/work/FFmpeg_ws/FFmpeg_redist/mingw_gcc_x64/include",
+                    "${workspaceRoot}/scripts/FFmpeg-mingw_gcc_x64-debug",
                     "${workspaceRoot}/FFmpeg"
-                    ],
+                ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
             }
         }
-
     ],
     "version": 3
 }

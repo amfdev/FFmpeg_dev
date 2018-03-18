@@ -22,7 +22,7 @@ config=$3
 [ ! -d "$SOURCE_DIR" ] && echo FFmpeg source not found && exit 1
 
 [ -z "$BUILD_DIR" ] && BUILD_DIR=$ROOT_DIR/FFmpeg-$target-$config
-
+[ ! -d "$BUILD_DIR" ] && task=rebuild
 
 echo target=$target
 echo task=$task
