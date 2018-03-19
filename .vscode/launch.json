@@ -4,7 +4,30 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
+        {
+            "name": "(gdb) Bash on Windows Launch x64",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/scripts/FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "args": ["-y", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/test_nasa",
+            "environment": [],
+            "externalConsole": true,
+            "pipeTransport": {
+                "debuggerPath": "/usr/bin/gdb",
+                "pipeProgram": "C:\\Windows\\sysnative\\bash.exe",
+                "pipeArgs": [],
+                "pipeCwd": ""
+            },
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
         {
             "name": "(gdb) Launch 64x",
             "type": "cppdbg",

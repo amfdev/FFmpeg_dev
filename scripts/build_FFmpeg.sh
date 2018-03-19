@@ -1,4 +1,7 @@
 #!/bin/bash
+
+#set -x
+
 ROOT_DIR=$PWD
 
 target=$1
@@ -35,15 +38,9 @@ echo build=$BUILD_DIR
 
 if [ "$COMPILER" == "msvc" ]; then
     [ "$config" == "debug" ] && debugflags="--enable-debug"
-
-    extracflags=
-    extralinkflags=
-    #--extra-ldflags="-DEBUG"
 else
     [ "$config" == "debug" ] && debugflags="--enable-debug --disable-optimizations"
-
-    extracflags=
-    extralinkflags="--extra-ldflags=-static-libgcc"
+    [ ! "$config" == "debug" ] && debugflags=--disable-debug
 fi
 
 if [ "$task" == "rebuild" ]; then
@@ -52,33 +49,23 @@ fi
 mkdir -p $BUILD_DIR && cd $BUILD_DIR
 
 AMF_INCLUDE_DIR=../../../thirdparty/libs/AMF/include
-X264_REDIST_DIR=../../../thirdparty/libs/x264/$target
-X265_REDIST_DIR=../../../thirdparty/libs/x265/$target
-export PKG_CONFIG_PATH=${BUILD_DIR}/${X264_REDIST_DIR}:${PKG_CONFIG_PATH}
-export PKG_CONFIG_PATH=${BUILD_DIR}/${X265_REDIST_DIR}:${PKG_CONFIG_PATH}
-cp $X264_REDIST_DIR/bin/*.dll .
-cp $X265_REDIST_DIR/bin/*.dll .
-
-
 amf_params="--enable-amf --extra-cflags=-I$AMF_INCLUDE_DIR"
-x265_params="--enable-gpl --enable-libx265"
-x264_params="--enable-gpl --enable-libx264"
-
 
 if [ "$COMPILER" == "msvc" ]; then
+#    echo $COMPILER is temporary not supported && exit 1
 
     [ "$task" == "rebuild" ] && cp -r $SOURCE_DIR/* $BUILD_DIR
     [ "$task" == "rebuild" ] && $BUILD_DIR/configure --toolchain=msvc --enable-cross-compile --cc=cl.exe --ld=link.exe \
-        --pkg-config=`which pkg-config` \
-        $extracflags $extralinkflags $debugflags $x264_params $x265_params $amf_params
+        $debugflags --enable-gpl --enable-libx264 --enable-libx265 --enable-sdl2 $amf_params
 
     make
 fi
 if [ "$COMPILER" == "gcc" ]; then
 
-    [ "$task" == "rebuild" ] && $SOURCE_DIR/configure --target-os=$PLATFORM --arch=$FULLARCH --cross-prefix=$CROSS_PREFIX \
-        --pkg-config=`which pkg-config` \
-		$extracflags $extralinkflags $debugflags $x264_params $x265_params $amf_params
+    [ "$task" == "rebuild" ] && $SOURCE_DIR/configure --target-os=$PLATFORM --arch=x86 --cross-prefix=${TARGET}- \
+        --pkg-config=`which pkg-config` --pkg-config-flags=--static \
+		--extra-ldflags=-static-libgcc --extra-ldflags=-static \
+        $debugflags --enable-gpl --enable-libx264 --enable-libx265 --enable-sdl2 $amf_params
 
     make -j${NPROC}
 fi
