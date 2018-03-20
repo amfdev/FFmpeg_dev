@@ -35,7 +35,6 @@ echo source=$SOURCE_DIR
 echo build=$BUILD_DIR
 
 . "$thirdparty/scripts/toolset/$1" || exit 1
-[ ! -z "$LOG_FILE" ] && > $LOG_FILE
 
 if [ "$COMPILER" == "msvc" ]; then
     [ "$config" == "debug" ] && debugflags="--enable-debug"
