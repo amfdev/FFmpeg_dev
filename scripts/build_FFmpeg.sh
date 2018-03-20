@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -x
+set -x
 
 ROOT_DIR=$PWD
 
@@ -35,6 +35,7 @@ echo source=$SOURCE_DIR
 echo build=$BUILD_DIR
 
 . "$thirdparty/scripts/toolset/$1" || exit 1
+[ ! -z "$LOG_FILE" ] && > $LOG_FILE
 
 if [ "$COMPILER" == "msvc" ]; then
     [ "$config" == "debug" ] && debugflags="--enable-debug"
@@ -62,12 +63,12 @@ if [ "$COMPILER" == "msvc" ]; then
 fi
 if [ "$COMPILER" == "gcc" ]; then
 
-    [ "$task" == "rebuild" ] && $SOURCE_DIR/configure --target-os=$PLATFORM --arch=x86 --cross-prefix=${TARGET}- \
+    [ "$task" == "rebuild" ] && time.sh $SOURCE_DIR/configure --target-os=$PLATFORM --arch=x86 --cross-prefix=${TARGET}- \
         --pkg-config=`which pkg-config` --pkg-config-flags=--static \
 		--extra-ldflags=-static-libgcc --extra-ldflags=-static \
         $debugflags --enable-gpl --enable-libx264 --enable-libx265 --enable-sdl2 $amf_params
 
-    make -j${NPROC}
+    time.sh make -j${NPROC}
 fi
 
 cd $ROOT_DIR
