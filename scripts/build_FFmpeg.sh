@@ -49,7 +49,7 @@ if [ "$task" == "rebuild" ]; then
 fi
 mkdir -p $BUILD_DIR && cd $BUILD_DIR
 
-AMF_INCLUDE_DIR=../../../thirdparty/libs/AMF/include
+AMF_INCLUDE_DIR=../../AMF/include
 amf_params="--enable-amf --extra-cflags=-I$AMF_INCLUDE_DIR"
 
 if [ "$COMPILER" == "msvc" ]; then
