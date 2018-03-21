@@ -4,11 +4,26 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build FFmpeg mingw_gcc_x64",
+            "label": "test nasa",
+            "type": "process",
+            "command": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "args": [
+                "-y", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/test_nasa"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "build debug mingw_gcc_x64",
             "type": "shell",
             "args": [
                 "mingw_gcc_x64",
-                "rebuild",
+                "build",
                 "debug"
             ],
             "command": "./scripts/build_FFmpeg.sh",
@@ -21,7 +36,21 @@
             }
         },
         {
-            "label": "rebuild FFmpeg mingw_gcc_x64",
+            "label": "build release mingw_gcc_x64",
+            "type": "shell",
+            "args": [
+                "mingw_gcc_x64",
+                "build",
+                "release"
+            ],
+            "command": "./scripts/build_FFmpeg.sh",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "rebuild debug mingw_gcc_x64",
             "type": "shell",
             "args": [
                 "mingw_gcc_x64",
@@ -31,9 +60,23 @@
             "command": "./scripts/build_FFmpeg.sh",
             "problemMatcher": [
                 "$gcc"
-            ]
+            ],
+            "group": "build"
+        },
+        {
+            "label": "rebuild release mingw_gcc_x64",
+            "type": "shell",
+            "args": [
+                "mingw_gcc_x64",
+                "rebuild",
+                "release"
+            ],
+            "command": "./scripts/build_FFmpeg.sh",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build"
         }
-        
     ]
 }
 

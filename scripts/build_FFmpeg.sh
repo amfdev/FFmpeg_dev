@@ -7,13 +7,17 @@ ROOT_DIR=$PWD
 target=$1
 task=$2
 config=$3
+link=$4
 
 [ -z "$target" ] && echo target is not specified && exit 1
 [ -z "$task" ] && task=rebuild
 [ -z "$config" ] && config=release
+[ -z "$link" ] && [ "$config" == "release" ] && link=static
+[ -z "$link" ] && [ "$config" == "debug" ] && link=shared
 
 [ "$task" != "build" ] && [ "$task" != "rebuild" ] && echo invalid task $task. must be build or rebuild && exit 1
 [ "$config" != "release" ] && [ "$config" != "debug" ] && echo invalid config $config. must be release or debug && exit 1
+[ "$link" != "static" ] && [ "$link" != "shared" ] && echo invalid link $link. must be static or shared && exit 1
 
 [ -d "$thirdparty" ] || thirdparty=`readlink -f ${ROOT_DIR}/../thirdparty`
 [ -d "$thirdparty" ] || thirdparty=`readlink -f ${ROOT_DIR}/../../thirdparty`
@@ -25,6 +29,7 @@ config=$3
 [ ! -d "$SOURCE_DIR" ] && echo FFmpeg source not found && exit 1
 
 [ -z "$BUILD_DIR" ] && BUILD_DIR=$ROOT_DIR/_build_FFmpeg-$target-$config
+[ -z "$REDIST_DIR" ] && REDIST_DIR=$ROOT_DIR/_build_FFmpeg-redist-$target-$config
 [ ! -d "$BUILD_DIR" ] && task=rebuild
 
 echo target=$target
@@ -41,6 +46,9 @@ if [ "$COMPILER" == "msvc" ]; then
 else
     [ "$config" == "debug" ] && debugflags="--enable-debug --disable-optimizations"
     [ ! "$config" == "debug" ] && debugflags=--disable-debug
+    
+    [ "$link" == "static" ] && linkflags="--extra-ldflags=-static --pkg-config-flags=--static"
+    [ "$link" == "shared" ] && linkflags="--extra-ldflags=-static-libgcc"
 fi
 
 if [ "$task" == "rebuild" ]; then
@@ -56,7 +64,7 @@ mkdir -p $BUILD_DIR && cd $BUILD_DIR
 amf_params="--enable-amf --extra-cflags=-I$AMF_INCLUDE_DIR"
 
 if [ "$COMPILER" == "msvc" ]; then
-#    echo $COMPILER is temporary not supported && exit 1
+    echo $COMPILER is temporary not supported && exit 1
 
     [ "$task" == "rebuild" ] && cp -r $SOURCE_DIR/* $BUILD_DIR
     [ "$task" == "rebuild" ] && $BUILD_DIR/configure --toolchain=msvc --enable-cross-compile --cc=cl.exe --ld=link.exe \
@@ -66,9 +74,9 @@ if [ "$COMPILER" == "msvc" ]; then
 fi
 if [ "$COMPILER" == "gcc" ]; then
 
-    [ "$task" == "rebuild" ] && time.sh $SOURCE_DIR/configure --target-os=$PLATFORM --arch=x86 --cross-prefix=${TARGET}- \
-        --pkg-config=`which pkg-config` --pkg-config-flags=--static \
-		--extra-ldflags=-static-libgcc --extra-ldflags=-static \
+    [ "$task" == "rebuild" ] && time.sh $SOURCE_DIR/configure --target-os=$PLATFORM --arch=x86 --cross-prefix=${TARGET}- --prefix="$REDIST_DIR" \
+        --pkg-config=`which pkg-config` \
+		$linkflags \
         $debugflags --enable-gpl --enable-libx264 --enable-libx265 --enable-sdl2 $amf_params
 
     time.sh make -j${NPROC}

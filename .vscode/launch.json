@@ -21,8 +21,7 @@
                 "engineLogging": true
             },
             "sourceFileMap": {
-                "/mnt/c/work/FFmpeg_dev/_build_FFmpeg-mingw_gcc_x64-debug/src": "${workspaceFolder}/FFmpeg",
-                "./src": "${workspaceFolder}/FFmpeg",
+                "/mnt/d/work/FFmpeg_dev/_build_FFmpeg-mingw_gcc_x64-debug/src": "${workspaceFolder}/FFmpeg",
                 "/usr/local/mingw-w64": "C:/ubuntu_fs/usr/local/mingw-w64/"
             },
             "setupCommands": [
