@@ -1,3 +1,5 @@
-/scripts/FFmpeg-*
-/*/log.txt
+scripts/FFmpeg-*
+*/_build*
+_build*
+*/log.txt
 

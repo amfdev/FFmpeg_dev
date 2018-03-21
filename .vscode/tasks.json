@@ -4,13 +4,36 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "echo",
+            "label": "build FFmpeg mingw_gcc_x64",
             "type": "shell",
-            "command": "echo Hello",
+            "args": [
+                "mingw_gcc_x64",
+                "rebuild",
+                "debug"
+            ],
+            "command": "./scripts/build_FFmpeg.sh",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "rebuild FFmpeg mingw_gcc_x64",
+            "type": "shell",
+            "args": [
+                "mingw_gcc_x64",
+                "rebuild",
+                "debug"
+            ],
+            "command": "./scripts/build_FFmpeg.sh",
             "problemMatcher": [
                 "$gcc"
             ]
         }
+        
     ]
 }
 

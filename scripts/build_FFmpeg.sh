@@ -24,7 +24,7 @@ config=$3
 [ -d "$SOURCE_DIR" ] || SOURCE_DIR=`readlink -f ${ROOT_DIR}/../../FFmpeg`
 [ ! -d "$SOURCE_DIR" ] && echo FFmpeg source not found && exit 1
 
-[ -z "$BUILD_DIR" ] && BUILD_DIR=$ROOT_DIR/FFmpeg-$target-$config
+[ -z "$BUILD_DIR" ] && BUILD_DIR=$ROOT_DIR/_build_FFmpeg-$target-$config
 [ ! -d "$BUILD_DIR" ] && task=rebuild
 
 echo target=$target
@@ -48,7 +48,11 @@ if [ "$task" == "rebuild" ]; then
 fi
 mkdir -p $BUILD_DIR && cd $BUILD_DIR
 
-AMF_INCLUDE_DIR=../../AMF/include
+[ -z "$AMF_INCLUDE_DIR" ] && AMF_INCLUDE_DIR="AMF/include"
+[ -d "$AMF_INCLUDE_DIR" ] || AMF_INCLUDE_DIR="../AMF/include"
+[ -d "$AMF_INCLUDE_DIR" ] || AMF_INCLUDE_DIR="../../AMF/include"
+[ ! -d "$AMF_INCLUDE_DIR" ] && echo FFmpeg source not found && exit 1
+
 amf_params="--enable-amf --extra-cflags=-I$AMF_INCLUDE_DIR"
 
 if [ "$COMPILER" == "msvc" ]; then
