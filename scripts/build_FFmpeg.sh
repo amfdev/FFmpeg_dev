@@ -75,13 +75,15 @@ fi
 if [ "$COMPILER" == "gcc" ]; then
 
     [ "$task" == "rebuild" ] && time.sh $SOURCE_DIR/configure --target-os=$PLATFORM --arch=x86 --cross-prefix=${TARGET}- --prefix="$REDIST_DIR" \
+        --ln_s='cp -R' \
         --pkg-config=`which pkg-config` \
 		$linkflags \
         $debugflags --enable-gpl --enable-libx264 --enable-libx265 --enable-sdl2 $amf_params
-
+    
+    [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/libx265.dll ./
+    [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/SDL2.dll ./
     time.sh make -j${NPROC}
 fi
 
 cd $ROOT_DIR
-
 
