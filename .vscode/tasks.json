@@ -4,11 +4,26 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "test nasa",
+            "label": "test nasa dx11",
             "type": "process",
             "command": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
             "args": [
                 "-y", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/test_nasa"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "test nasa dx9",
+            "type": "process",
+            "command": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "args": [
+                "-y", "-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/test_nasa"
@@ -47,6 +62,12 @@
             "problemMatcher": [
                 "$gcc"
             ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            },
             "group": "build"
         },
         {

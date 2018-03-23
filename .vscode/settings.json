@@ -1,7 +1,2 @@
 {
-    "files.associations": {
-        "w32dlfcn.h": "c",
-        "avassert.h": "c",
-        "imgutils.h": "c"
-    }
 }

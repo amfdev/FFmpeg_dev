@@ -5,11 +5,43 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch 64x",
+            "name": "(gdb) Launch DX11 64x",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
             "args": ["-y", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
+            "args1": ["-y", "-hwaccel_device", "0", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/test_nasa",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:/msys64/mingw64/bin/gdb.exe",
+            "internalConsoleOptions": "openOnSessionStart",
+            "logging": {
+                "engineLogging": true
+            },
+            "sourceFileMap": {
+                "/mnt/c/": "c:/",
+                "/mnt/d/": "d:/",
+                "/mnt/e/": "e:/",
+                "/usr/local/mingw-w64": "C:/ubuntu_fs/usr/local/mingw-w64",
+                "/home": "C:/ubuntu_fs/home"
+            },
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) Launch DX9 64x",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "args": ["-y", "-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/test_nasa",
             "environment": [],
@@ -35,5 +67,6 @@
                 }
             ]
         }
+       
     ]
 }
