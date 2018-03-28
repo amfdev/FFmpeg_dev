@@ -16,6 +16,12 @@
             "group": {
                 "kind": "test",
                 "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
             }
         },
         {
@@ -31,6 +37,12 @@
             "group": {
                 "kind": "test",
                 "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
             }
         },
         {
@@ -48,6 +60,12 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
             }
         },
         {
@@ -66,7 +84,7 @@
                 "echo": true,
                 "reveal": "always",
                 "focus": true,
-                "panel": "shared"
+                "panel": "new"
             },
             "group": "build"
         },
@@ -82,6 +100,12 @@
             "problemMatcher": [
                 "$gcc"
             ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
             "group": "build"
         },
         {
@@ -96,6 +120,12 @@
             "problemMatcher": [
                 "$gcc"
             ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
             "group": "build"
         }
     ]

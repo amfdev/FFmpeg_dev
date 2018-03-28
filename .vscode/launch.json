@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
-            "args": ["-y", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
+            "args": ["-y", "-threads", "0", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "args1": ["-y", "-hwaccel_device", "0", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/test_nasa",
@@ -22,9 +22,8 @@
                 "engineLogging": true
             },
             "sourceFileMap": {
-                "/mnt/c/": "c:/",
-                "/mnt/d/": "d:/",
-                "/mnt/e/": "e:/",
+                "/mnt/c/work/FFmpeg_dev.amf-issue01-frame_corruption/FFmpeg": "c:/work/FFmpeg_dev.amf-issue01-frame_corruption/FFmpeg",
+                "/mnt/c/work/FFmpeg_dev.amf-issue01-frame_corruption/_build_FFmpeg-mingw_gcc_x64-debug": "C:/work/FFmpeg_dev.amf-issue01-frame_corruption/_build_FFmpeg-mingw_gcc_x64-debug",
                 "/usr/local/mingw-w64": "C:/ubuntu_fs/usr/local/mingw-w64",
                 "/home": "C:/ubuntu_fs/home"
             },
