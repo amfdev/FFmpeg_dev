@@ -64,7 +64,7 @@ mkdir -p $BUILD_DIR && cd $BUILD_DIR
 amf_params="--enable-amf --extra-cflags=-I$AMF_INCLUDE_DIR"
 
 OCL_ROOT=$thirdparty/libs/OCL
-ocl_params="--extra-cflags=-I${OCL_ROOT}/include --extra-ldflags=-L${OCL_ROOT}/lib/$ARCH_LIB"
+ocl_params="--enable-opencl --extra-cflags=-I${OCL_ROOT}/include --extra-ldflags=-L${OCL_ROOT}/lib/$ARCH_LIB"
 
 
 if [ "$COMPILER" == "msvc" ]; then

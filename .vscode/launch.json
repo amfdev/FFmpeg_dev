@@ -9,10 +9,11 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
-            "args2": ["-y", "-threads", "1", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-init_hw_device", "opencl=ocl:1.0", "-filter_hw_device", "ocl", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "args1": ["-y", "-hwaccel_device", "0", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
+            "args2": ["-y", "-threads", "1", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-init_hw_device", "opencl=ocl:1.0", "-filter_hw_device", "ocl", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "args3": ["-hide_banner", "-v", "verbose", "-init_hw_device", "opencl=ocl:0.0", "-filter_hw_device", "ocl"],
             "args4": ["-hide_banner", "-v", "verbose", "-init_hw_device", "d3d11va=dx1:0", "-init_hw_device", "dxva2=dx2:0", "-init_hw_device", "opencl=opencl@dx2", "-filter_hw_device", "opencl"],
+            "args5": ["-y", "-threads", "0", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
 
             "args": [
                 "-hide_banner", "-v", "verbose", 
@@ -34,9 +35,8 @@
                 "engineLogging": false
             },
             "sourceFileMap": {
-                "/mnt/c/": "c:/",
-                "/mnt/d/": "d:/",
-                "/mnt/e/": "e:/",
+                "/mnt/c/work/FFmpeg_dev.amf-issue01-frame_corruption/FFmpeg": "c:/work/FFmpeg_dev.amf-issue01-frame_corruption/FFmpeg",
+                "/mnt/c/work/FFmpeg_dev.amf-issue01-frame_corruption/_build_FFmpeg-mingw_gcc_x64-debug": "C:/work/FFmpeg_dev.amf-issue01-frame_corruption/_build_FFmpeg-mingw_gcc_x64-debug",
                 "/usr/local/mingw-w64": "C:/ubuntu_fs/usr/local/mingw-w64",
                 "/home": "C:/ubuntu_fs/home"
             },
