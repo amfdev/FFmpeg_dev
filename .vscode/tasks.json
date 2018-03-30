@@ -34,6 +34,26 @@
             }
         },
         {
+            "label": "test devices",
+            "type": "process",
+            "command": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "args": [
+                "-hide_banner", "-v", "verbose", 
+                "-init_hw_device", "d3d11va=dx1:0", 
+                "-init_hw_device", "dxva2=dx2:0", 
+                "-init_hw_device", "opencl=opencl@dx2", 
+                "-init_hw_device", "amf@dx2",
+                "-filter_hw_device", "opencl"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/test_nasa"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
             "label": "build debug mingw_gcc_x64",
             "type": "shell",
             "args": [
@@ -66,7 +86,7 @@
                 "echo": true,
                 "reveal": "always",
                 "focus": true,
-                "panel": "shared"
+                "panel": "new"
             },
             "group": "build"
         },
