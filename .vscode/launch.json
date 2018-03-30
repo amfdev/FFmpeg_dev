@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
-            "args": ["-y", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
+            "args": ["-y", "-threads", "1", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "args1": ["-y", "-hwaccel_device", "0", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/test_nasa",

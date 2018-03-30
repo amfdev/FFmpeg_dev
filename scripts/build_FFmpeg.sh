@@ -63,6 +63,11 @@ mkdir -p $BUILD_DIR && cd $BUILD_DIR
 
 amf_params="--enable-amf --extra-cflags=-I$AMF_INCLUDE_DIR"
 
+ocl_params="--extra-cflags=-I${OCL_ROOT}/include --extra-ldflags=-L${OCL_ROOT}/lib/$ARCH_LIB"
+
+${OCL_ROOT}\lib\x86_64
+
+
 if [ "$COMPILER" == "msvc" ]; then
     echo $COMPILER is temporary not supported && exit 1
 
@@ -78,7 +83,7 @@ if [ "$COMPILER" == "gcc" ]; then
         --ln_s='cp -R' \
         --pkg-config=`which pkg-config` \
 		$linkflags \
-        $debugflags --enable-gpl --enable-libx264 --enable-libx265 --enable-sdl2 $amf_params
+        $debugflags --enable-gpl --enable-libx264 --enable-libx265 --enable-sdl2 $amf_params $ocl_params
     
     [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/libx265.dll ./
     [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/SDL2.dll ./
