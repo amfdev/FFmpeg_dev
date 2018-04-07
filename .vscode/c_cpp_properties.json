@@ -48,6 +48,7 @@
                 "C:/ubuntu_fs/usr/local/mingw-w64/toolchain-x86_64/x86_64-w64-mingw32/include",
                 "C:/ubuntu_fs/usr/local/mingw-w64/toolchain-x86_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include",
                 "${workspaceRoot}/AMF/include",
+                "${workspaceRoot}/../thirdparty/libs/OCL/include",
                 "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug",
                 "${workspaceRoot}/FFmpeg"
             ],
@@ -60,6 +61,7 @@
                     "C:/ubuntu_fs/usr/local/mingw-w64/toolchain-x86_64/x86_64-w64-mingw32/include",
                     "C:/ubuntu_fs/usr/local/mingw-w64/toolchain-x86_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include",
                     "${workspaceRoot}/AMF/include",
+                    "${workspaceRoot}/../thirdparty/libs/OCL/include",
                     "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug",
                     "${workspaceRoot}/FFmpeg"
                 ],
