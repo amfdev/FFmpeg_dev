@@ -8,30 +8,23 @@
             "name": "(gdb) Launch DX11 64x",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/_build__build-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "program": "${workspaceRoot}/_build-mingw_gcc_x64-debug/ffmpeg_g.exe",
             "args1": ["-y", "-hwaccel_device", "0", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "args2": ["-y", "-threads", "1", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-init_hw_device", "opencl=ocl:1.0", "-filter_hw_device", "ocl", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "args3": ["-hide_banner", "-v", "verbose", "-init_hw_device", "opencl=ocl:0.0", "-filter_hw_device", "ocl"],
             "args4": ["-hide_banner", "-v", "verbose", "-init_hw_device", "d3d11va=dx1:0", "-init_hw_device", "dxva2=dx2:0", "-init_hw_device", "opencl=opencl@dx2", "-filter_hw_device", "opencl"],
-            "args11": [
-                "-hide_banner", "-v", "verbose", 
-                "-y", 
-                "-threads", "1", 
-                "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", 
-                //"-init_hw_device", "d3d11va=dx1:0", 
-                
-                "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"
-                ],
-            "args": [
-            "-hide_banner", "-v", "verbose", 
-            "-y", 
-            "-threads", "1", 
-            "-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", 
-            //"-init_hw_device", "d3d11va=dx1:0", 
-            
-            "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"
-            ],
 
+            "args": ["-y", 
+                "-threads", "1",
+                "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", 
+                //"-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", 
+                "-extra_hw_frames", "16", 
+
+                //"-i", "matrixbench_mpeg2.mpg", 
+                "-i", "nasa_720p.264", 
+                "-an", "-c:v", "h264_amf", 
+                "out.mkv"],
+    
             "args_h": [
                 "-hide_banner", "-v", "verbose", 
                 "-init_hw_device", "d3d11va=dx1:0", 
