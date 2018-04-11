@@ -71,10 +71,11 @@ ocl_params="--enable-opencl --extra-cflags=-I${OCL_ROOT}/include --extra-ldflags
 
 if [ "$LIBNAME" == "libav" ]; then
     LIBOPT=
-    LIBCOPY="cp -T $BUILD_DIR/avconv.exe $BUILD_DIR/ffmpeg_g.exe; cp -T $BUILD_DIR/avprobe.exe $BUILD_DIR/ffprobe_g.exe"
+    LIBOPT2=
 fi
 if [ "$LIBNAME" == "ffmpeg" ]; then
-    LIBOPT="--ln_s='cp -R' --enable-sdl2 $ocl_params"
+    LIBOPT=--ln_s='cp -R\'
+    LIBOPT2="--enable-sdl2 $ocl_params"
 fi
 
 if [ "$COMPILER" == "msvc" ]; then
@@ -86,16 +87,25 @@ if [ "$COMPILER" == "msvc" ]; then
 
 #    make
 fi
-if [ "$COMPILER" == "gcc" ]; then
+
+if [ "$COMPILER" == "gcc" ] && [ "$LIBNAME" == "ffmpeg" ]; then
 
     [ "$task" == "rebuild" ] && time.sh $SOURCE_DIR/configure --target-os=$PLATFORM --arch=x86 --cross-prefix=${TARGET}- --prefix="$REDIST_DIR" \
-        $LIBOPT \
-        --pkg-config=`which pkg-config` \
-		$linkflags \
-        $debugflags --enable-gpl --enable-libx264 --enable-libx265 $amf_params
+        --ln_s='cp -R' \
+        --pkg-config=`which pkg-config` $linkflags \
+        $debugflags --enable-gpl --enable-libx264 --enable-libx265 $amf_params --enable-sdl2 $ocl_params
     
     [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/libx265.dll ./
     [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/SDL2.dll ./
+    time.sh make -j${NPROC}
+fi
+if [ "$COMPILER" == "gcc" ] && [ "$LIBNAME" == "libav" ]; then
+
+    [ "$task" == "rebuild" ] && time.sh $SOURCE_DIR/configure --target-os=$PLATFORM --arch=x86 --cross-prefix=${TARGET}- --prefix="$REDIST_DIR" \
+        --pkg-config=`which pkg-config` $linkflags \
+        $debugflags --enable-gpl --enable-libx264 --enable-libx265 $amf_params
+    
+    [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/libx265.dll ./
     time.sh make -j${NPROC}
 fi
 
