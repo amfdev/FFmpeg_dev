@@ -112,6 +112,8 @@ fi
 if [ "$LIBNAME" == "libav" ]; then
     cp -T $BUILD_DIR/avconv.exe $BUILD_DIR/ffmpeg_g.exe
     cp -T $BUILD_DIR/avprobe.exe $BUILD_DIR/ffprobe_g.exe
+    cp -T $BUILD_DIR/avconv.exe $BUILD_DIR/ffmpeg.exe
+    cp -T $BUILD_DIR/avprobe.exe $BUILD_DIR/ffprobe.exe
 fi
 
 cd $ROOT_DIR
