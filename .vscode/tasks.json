@@ -6,7 +6,7 @@
         {
             "label": "test nasa dx11",
             "type": "process",
-            "command": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "command": "${workspaceRoot}/_build-mingw_gcc_x64-debug/ffmpeg_g.exe",
             "args": [
                 "-y", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"
             ],
@@ -27,7 +27,7 @@
         {
             "label": "test nasa dx9",
             "type": "process",
-            "command": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "command": "${workspaceRoot}/_build-mingw_gcc_x64-debug/ffmpeg_g.exe",
             "args": [
                 "-y", "-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"
             ],
@@ -48,7 +48,7 @@
         {
             "label": "test devices",
             "type": "process",
-            "command": "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug/ffmpeg_g.exe",
+            "command": "${workspaceRoot}/_build-mingw_gcc_x64-debug/ffmpeg_g.exe",
             "args": [
                 "-hide_banner", "-v", "verbose", 
                 "-init_hw_device", "d3d11va=dx1:0", 
@@ -73,7 +73,7 @@
                 "build",
                 "debug"
             ],
-            "command": "./scripts/build_FFmpeg.sh",
+            "command": "./scripts/build.sh",
             "problemMatcher": [
                 "$gcc"
             ],
@@ -96,7 +96,7 @@
                 "build",
                 "release"
             ],
-            "command": "./scripts/build_FFmpeg.sh",
+            "command": "./scripts/build.sh",
             "problemMatcher": [
                 "$gcc"
             ],
@@ -116,7 +116,7 @@
                 "rebuild",
                 "debug"
             ],
-            "command": "./scripts/build_FFmpeg.sh",
+            "command": "./scripts/build.sh",
             "problemMatcher": [
                 "$gcc"
             ],
@@ -136,7 +136,7 @@
                 "rebuild",
                 "release"
             ],
-            "command": "./scripts/build_FFmpeg.sh",
+            "command": "./scripts/build.sh",
             "problemMatcher": [
                 "$gcc"
             ],

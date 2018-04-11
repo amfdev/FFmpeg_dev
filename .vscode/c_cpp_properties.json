@@ -49,8 +49,8 @@
                 "C:/ubuntu_fs/usr/local/mingw-w64/toolchain-x86_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include",
                 "${workspaceRoot}/AMF/include",
                 "${workspaceRoot}/../thirdparty/libs/OCL/include",
-                "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug",
-                "${workspaceRoot}/FFmpeg"
+                "${workspaceRoot}/_build-mingw_gcc_x64-debug",
+                "${workspaceRoot}/Sources"
             ],
             "defines": [
                 "_WIN32"
@@ -62,8 +62,8 @@
                     "C:/ubuntu_fs/usr/local/mingw-w64/toolchain-x86_64/lib/gcc/x86_64-w64-mingw32/7.3.0/include",
                     "${workspaceRoot}/AMF/include",
                     "${workspaceRoot}/../thirdparty/libs/OCL/include",
-                    "${workspaceRoot}/_build_FFmpeg-mingw_gcc_x64-debug",
-                    "${workspaceRoot}/FFmpeg"
+                    "${workspaceRoot}/_build-mingw_gcc_x64-debug",
+                    "${workspaceRoot}/Sources"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -81,8 +81,8 @@
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/shared",
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/winrt",
                 "${workspaceRoot}",
-                "${workspaceRoot}/FFmpeg",
-                "${workspaceRoot}/FFmpeg-mingw_gcc_x64-debug"
+                "${workspaceRoot}/Sources",
+                "${workspaceRoot}/Sources-mingw_gcc_x64-debug"
             ],
             "defines": [
                 "_DEBUG",
