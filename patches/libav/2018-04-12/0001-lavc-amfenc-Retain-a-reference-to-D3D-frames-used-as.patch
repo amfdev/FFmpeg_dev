@@ -4,6 +4,14 @@ Date: Wed, 11 Apr 2018 17:38:52 +0300
 Subject: [PATCH] lavc/amfenc: Retain a reference to D3D frames used as input
  during the encoding process
 
+This fixes frame corruption issue when decoder started reusing frames while they are still in use of encoding process
+
+Issue with frame corruption  was reproduced using:
+avconv.exe -y -hwaccel d3d11va -hwaccel_output_format d3d11 -i input.h264 -an -c:v h264_amf output.mkv
+
+it is recommended to use -extra_hw_frames 16 option in case if hw frames number in pool is not enough
+
+
 ---
  libavcodec/amfenc.c | 95 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
  libavcodec/amfenc.h |  3 ++
