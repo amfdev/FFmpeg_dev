@@ -13,18 +13,6 @@
             "args2": ["-y", "-threads", "1", "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", "-init_hw_device", "opencl=ocl:1.0", "-filter_hw_device", "ocl", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
             "args3": ["-hide_banner", "-v", "verbose", "-init_hw_device", "opencl=ocl:0.0", "-filter_hw_device", "ocl"],
             "args4": ["-hide_banner", "-v", "verbose", "-init_hw_device", "d3d11va=dx1:0", "-init_hw_device", "dxva2=dx2:0", "-init_hw_device", "opencl=opencl@dx2", "-filter_hw_device", "opencl"],
-
-            "args": ["-y", 
-                "-threads", "1",
-                "-hwaccel", "d3d11va", //"-hwaccel_output_format", "d3d11", 
-                //"-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", 
-                "-extra_hw_frames", "16", 
-
-                //"-i", "matrixbench_mpeg2.mpg", 
-                "-i", "nasa_720p.264", 
-                "-an", "-c:v", "h264_amf", 
-                "out.mkv"],
-    
             "args_h": [
                 "-hide_banner", "-v", "verbose", 
                 "-init_hw_device", "d3d11va=dx1:0", 
@@ -34,6 +22,18 @@
                 "-filter_hw_device", "amf"
             ],
 
+
+            "args": ["-y", 
+                "-threads", "1",
+                "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", 
+                //"-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", 
+                "-extra_hw_frames", "16", 
+
+                //"-i", "matrixbench_mpeg2.mpg", 
+                "-i", "nasa_720p.264", 
+                "-an", "-c:v", "h264_amf", 
+                "out.mkv"],
+    
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/tests",
             "environment": [],
@@ -46,39 +46,10 @@
             },
             "sourceFileMap": {
                 "/mnt/c": "c:/",
-                "/usr/local/mingw-w64": "C:/ubuntu_fs/usr/local/mingw-w64",
-                "/home": "C:/ubuntu_fs/home"
-            },
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) Launch DX9 64x",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/_build-mingw_gcc_x64-debug/ffmpeg_g.exe",
-            "args": ["-y", "-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", "-i", "nasa_720p.264", "-an", "-c:v", "h264_amf", "out.mkv"],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/test_nasa",
-            "environment": [],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "miDebuggerPath": "C:/msys64/mingw64/bin/gdb.exe",
-            "internalConsoleOptions": "openOnSessionStart",
-            "logging": {
-                "engineLogging": true
-            },
-            "sourceFileMap": {
-                "/mnt/c/": "c:/",
-                "/mnt/d/": "d:/",
-                "/mnt/e/": "e:/",
-                "/usr/local/mingw-w64": "C:/ubuntu_fs/usr/local/mingw-w64",
-                "/home": "C:/ubuntu_fs/home"
+                "/mnt/d": "d:/",
+                "/mnt/e": "e:/",
+                "/usr/local": "${workspaceRoot}/../ubuntu_fs/usr/local",
+                "/home": "${workspaceRoot}/../ubuntu_fs/home"
             },
             "setupCommands": [
                 {
@@ -88,6 +59,6 @@
                 }
             ]
         }
-       
+      
     ]
 }
