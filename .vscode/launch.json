@@ -25,8 +25,8 @@
 
             "args": ["-y", 
                 "-threads", "1",
-                "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", 
-                //"-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", 
+                //"-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", 
+                "-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", 
                 "-extra_hw_frames", "16", 
 
                 //"-i", "matrixbench_mpeg2.mpg", 
