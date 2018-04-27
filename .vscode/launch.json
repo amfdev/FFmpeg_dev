@@ -48,8 +48,8 @@
                 "/mnt/c": "c:/",
                 "/mnt/d": "d:/",
                 "/mnt/e": "e:/",
-                "/usr/local": "${workspaceRoot}/../ubuntu_fs/usr/local",
-                "/home": "${workspaceRoot}/../ubuntu_fs/home"
+                "/usr/local": "${LOCALAPPDATA}/Packages/CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc/LocalState/rootfs/usr/local",
+                "/home": "${LOCALAPPDATA}/Packages/CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc/LocalState/rootfs/home"
             },
             "setupCommands": [
                 {
