@@ -1,12 +1,11 @@
 From a54b65dd02eb0b946b23bbc21e97aec55bbe6c78 Mon Sep 17 00:00:00 2001
 From: Alexander Kravchenko <akravchenko188@gmail.com>
 Date: Thu, 26 Apr 2018 21:02:02 +0300
-Subject: [PATCH] lavc/amfenc: moving amf common code (library and context) to
-lavu/hwcontext_amf from amfenc to be reused in other amd components
+Subject: [PATCH] lavc/amfenc: moving amf common code (library and context) to lavu/hwcontext_amf from amfenc to be reused in other amf components
 
 This patch moves AMF common parts from amfenc to hwcontext_amf.
-Now av_hwdevice_ctx API is used for AMF context creation/destroying
-This patch does not change component behaviour, 
+Now av_hwdevice_ctx API is used for AMF context creation/destroying.
+This patch does not change component behaviour.
 it contains only restructurization for further patches with new amf components
 
 ---
