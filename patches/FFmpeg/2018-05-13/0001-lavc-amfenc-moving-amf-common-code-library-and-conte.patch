@@ -1,0 +1,802 @@
+From 7ae2a0171941ad438de74537603a5dca2417bcf1 Mon Sep 17 00:00:00 2001
+From: Alexander Kravchenko <akravchenko188@gmail.com>
+Date: Mon, 14 May 2018 16:26:30 +0300
+Subject: [PATCH] lavc/amfenc: moving amf common code (library and context) to
+ lavu/hwcontext_amf from amfenc to be reused in other amf components
+
+This patch moves AMF common parts from amfenc to hwcontext_amf.
+Now av_hwdevice_ctx API is used for AMF context creation/destroying.
+This patch does not change component behaviour.
+it contains only restructurization for further patches with new amf components
+
+---
+Sending updated patch based on Mark's review
+1) moved device free code from amf_device_free to amf_device_uninit
+2) added comments for AVAMFDeviceContext structure
+
+
+ libavcodec/amfenc.c            | 247 +++++-----------------------------------
+ libavcodec/amfenc.h            |  27 +----
+ libavutil/Makefile             |   2 +
+ libavutil/hwcontext.c          |   4 +
+ libavutil/hwcontext.h          |   1 +
+ libavutil/hwcontext_amf.c      | 253 +++++++++++++++++++++++++++++++++++++++++
+ libavutil/hwcontext_amf.h      |  54 +++++++++
+ libavutil/hwcontext_internal.h |   1 +
+ 8 files changed, 350 insertions(+), 239 deletions(-)
+ create mode 100644 libavutil/hwcontext_amf.c
+ create mode 100644 libavutil/hwcontext_amf.h
+
+diff --git a/libavcodec/amfenc.c b/libavcodec/amfenc.c
+index 384d8efc92..4c907ca3bc 100644
+--- a/libavcodec/amfenc.c
++++ b/libavcodec/amfenc.c
+@@ -21,13 +21,7 @@
+ #include "libavutil/avassert.h"
+ #include "libavutil/imgutils.h"
+ #include "libavutil/hwcontext.h"
+-#if CONFIG_D3D11VA
+-#include "libavutil/hwcontext_d3d11va.h"
+-#endif
+-#if CONFIG_DXVA2
+-#define COBJMACROS
+-#include "libavutil/hwcontext_dxva2.h"
+-#endif
++
+ #include "libavutil/mem.h"
+ #include "libavutil/pixdesc.h"
+ #include "libavutil/time.h"
+@@ -35,14 +29,12 @@
+ #include "amfenc.h"
+ #include "internal.h"
+ 
+-#if CONFIG_D3D11VA
+-#include <d3d11.h>
++#if CONFIG_DXVA2
++#include <d3d9.h>
+ #endif
+ 
+-#ifdef _WIN32
+-#include "compat/w32dlfcn.h"
+-#else
+-#include <dlfcn.h>
++#if CONFIG_D3D11VA
++#include <d3d11.h>
+ #endif
+ 
+ #define FFMPEG_AMF_WRITER_ID L"ffmpeg_amf"
+@@ -88,34 +80,18 @@ static enum AMF_SURFACE_FORMAT amf_av_to_amf_format(enum AVPixelFormat fmt)
+     return AMF_SURFACE_UNKNOWN;
+ }
+ 
+-static void AMF_CDECL_CALL AMFTraceWriter_Write(AMFTraceWriter *pThis,
+-    const wchar_t *scope, const wchar_t *message)
+-{
+-    AmfTraceWriter *tracer = (AmfTraceWriter*)pThis;
+-    av_log(tracer->avctx, AV_LOG_DEBUG, "%ls: %ls", scope, message); // \n is provided from AMF
+-}
+-
+-static void AMF_CDECL_CALL AMFTraceWriter_Flush(AMFTraceWriter *pThis)
+-{
+-}
+ 
+-static AMFTraceWriterVtbl tracer_vtbl =
+-{
+-    .Write = AMFTraceWriter_Write,
+-    .Flush = AMFTraceWriter_Flush,
+-};
+-
+-static int amf_load_library(AVCodecContext *avctx)
++static int amf_init_context(AVCodecContext *avctx)
+ {
+-    AmfContext        *ctx = avctx->priv_data;
+-    AMFInit_Fn         init_fun;
+-    AMFQueryVersion_Fn version_fun;
+-    AMF_RESULT         res;
++    AmfContext *ctx = avctx->priv_data;
++    AVAMFDeviceContext *amf_ctx;
++    int ret;
+ 
+     ctx->delayed_frame = av_frame_alloc();
+     if (!ctx->delayed_frame) {
+         return AVERROR(ENOMEM);
+     }
++    
+     // hardcoded to current HW queue size - will realloc in timestamp_queue_enqueue() if too small
+     ctx->timestamp_list = av_fifo_alloc((avctx->max_b_frames + 16) * sizeof(int64_t));
+     if (!ctx->timestamp_list) {
+@@ -123,119 +99,9 @@ static int amf_load_library(AVCodecContext *avctx)
+     }
+     ctx->dts_delay = 0;
+ 
+-
+-    ctx->library = dlopen(AMF_DLL_NAMEA, RTLD_NOW | RTLD_LOCAL);
+-    AMF_RETURN_IF_FALSE(ctx, ctx->library != NULL,
+-        AVERROR_UNKNOWN, "DLL %s failed to open\n", AMF_DLL_NAMEA);
+-
+-    init_fun = (AMFInit_Fn)dlsym(ctx->library, AMF_INIT_FUNCTION_NAME);
+-    AMF_RETURN_IF_FALSE(ctx, init_fun != NULL, AVERROR_UNKNOWN, "DLL %s failed to find function %s\n", AMF_DLL_NAMEA, AMF_INIT_FUNCTION_NAME);
+-
+-    version_fun = (AMFQueryVersion_Fn)dlsym(ctx->library, AMF_QUERY_VERSION_FUNCTION_NAME);
+-    AMF_RETURN_IF_FALSE(ctx, version_fun != NULL, AVERROR_UNKNOWN, "DLL %s failed to find function %s\n", AMF_DLL_NAMEA, AMF_QUERY_VERSION_FUNCTION_NAME);
+-
+-    res = version_fun(&ctx->version);
+-    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "%s failed with error %d\n", AMF_QUERY_VERSION_FUNCTION_NAME, res);
+-    res = init_fun(AMF_FULL_VERSION, &ctx->factory);
+-    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "%s failed with error %d\n", AMF_INIT_FUNCTION_NAME, res);
+-    res = ctx->factory->pVtbl->GetTrace(ctx->factory, &ctx->trace);
+-    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "GetTrace() failed with error %d\n", res);
+-    res = ctx->factory->pVtbl->GetDebug(ctx->factory, &ctx->debug);
+-    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "GetDebug() failed with error %d\n", res);
+-    return 0;
+-}
+-
+-#if CONFIG_D3D11VA
+-static int amf_init_from_d3d11_device(AVCodecContext *avctx, AVD3D11VADeviceContext *hwctx)
+-{
+-    AmfContext *ctx = avctx->priv_data;
+-    AMF_RESULT res;
+-
+-    res = ctx->context->pVtbl->InitDX11(ctx->context, hwctx->device, AMF_DX11_1);
+-    if (res != AMF_OK) {
+-        if (res == AMF_NOT_SUPPORTED)
+-            av_log(avctx, AV_LOG_ERROR, "AMF via D3D11 is not supported on the given device.\n");
+-        else
+-            av_log(avctx, AV_LOG_ERROR, "AMF failed to initialise on the given D3D11 device: %d.\n", res);
+-        return AVERROR(ENODEV);
+-    }
+-
+-    return 0;
+-}
+-#endif
+-
+-#if CONFIG_DXVA2
+-static int amf_init_from_dxva2_device(AVCodecContext *avctx, AVDXVA2DeviceContext *hwctx)
+-{
+-    AmfContext *ctx = avctx->priv_data;
+-    HANDLE device_handle;
+-    IDirect3DDevice9 *device;
+-    HRESULT hr;
+-    AMF_RESULT res;
+-    int ret;
+-
+-    hr = IDirect3DDeviceManager9_OpenDeviceHandle(hwctx->devmgr, &device_handle);
+-    if (FAILED(hr)) {
+-        av_log(avctx, AV_LOG_ERROR, "Failed to open device handle for Direct3D9 device: %lx.\n", (unsigned long)hr);
+-        return AVERROR_EXTERNAL;
+-    }
+-
+-    hr = IDirect3DDeviceManager9_LockDevice(hwctx->devmgr, device_handle, &device, FALSE);
+-    if (SUCCEEDED(hr)) {
+-        IDirect3DDeviceManager9_UnlockDevice(hwctx->devmgr, device_handle, FALSE);
+-        ret = 0;
+-    } else {
+-        av_log(avctx, AV_LOG_ERROR, "Failed to lock device handle for Direct3D9 device: %lx.\n", (unsigned long)hr);
+-        ret = AVERROR_EXTERNAL;
+-    }
+-
+-    IDirect3DDeviceManager9_CloseDeviceHandle(hwctx->devmgr, device_handle);
+-
+-    if (ret < 0)
+-        return ret;
+-
+-    res = ctx->context->pVtbl->InitDX9(ctx->context, device);
+-
+-    IDirect3DDevice9_Release(device);
+-
+-    if (res != AMF_OK) {
+-        if (res == AMF_NOT_SUPPORTED)
+-            av_log(avctx, AV_LOG_ERROR, "AMF via D3D9 is not supported on the given device.\n");
+-        else
+-            av_log(avctx, AV_LOG_ERROR, "AMF failed to initialise on given D3D9 device: %d.\n", res);
+-        return AVERROR(ENODEV);
+-    }
+-
+-    return 0;
+-}
+-#endif
+-
+-static int amf_init_context(AVCodecContext *avctx)
+-{
+-    AmfContext *ctx = avctx->priv_data;
+-    AMF_RESULT  res;
+-    av_unused int ret;
+-
+     ctx->hwsurfaces_in_queue = 0;
+     ctx->hwsurfaces_in_queue_max = 16;
+ 
+-    // configure AMF logger
+-    // the return of these functions indicates old state and do not affect behaviour
+-    ctx->trace->pVtbl->EnableWriter(ctx->trace, AMF_TRACE_WRITER_DEBUG_OUTPUT, ctx->log_to_dbg != 0 );
+-    if (ctx->log_to_dbg)
+-        ctx->trace->pVtbl->SetWriterLevel(ctx->trace, AMF_TRACE_WRITER_DEBUG_OUTPUT, AMF_TRACE_TRACE);
+-    ctx->trace->pVtbl->EnableWriter(ctx->trace, AMF_TRACE_WRITER_CONSOLE, 0);
+-    ctx->trace->pVtbl->SetGlobalLevel(ctx->trace, AMF_TRACE_TRACE);
+-
+-    // connect AMF logger to av_log
+-    ctx->tracer.vtbl = &tracer_vtbl;
+-    ctx->tracer.avctx = avctx;
+-    ctx->trace->pVtbl->RegisterWriter(ctx->trace, FFMPEG_AMF_WRITER_ID,(AMFTraceWriter*)&ctx->tracer, 1);
+-    ctx->trace->pVtbl->SetWriterLevel(ctx->trace, FFMPEG_AMF_WRITER_ID, AMF_TRACE_TRACE);
+-
+-    res = ctx->factory->pVtbl->CreateContext(ctx->factory, &ctx->context);
+-    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "CreateContext() failed with error %d\n", res);
+-
+     // If a device was passed to the encoder, try to initialise from that.
+     if (avctx->hw_frames_ctx) {
+         AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+@@ -246,26 +112,9 @@ static int amf_init_context(AVCodecContext *avctx)
+             return AVERROR(EINVAL);
+         }
+ 
+-        switch (frames_ctx->device_ctx->type) {
+-#if CONFIG_D3D11VA
+-        case AV_HWDEVICE_TYPE_D3D11VA:
+-            ret = amf_init_from_d3d11_device(avctx, frames_ctx->device_ctx->hwctx);
+-            if (ret < 0)
+-                return ret;
+-            break;
+-#endif
+-#if CONFIG_DXVA2
+-        case AV_HWDEVICE_TYPE_DXVA2:
+-            ret = amf_init_from_dxva2_device(avctx, frames_ctx->device_ctx->hwctx);
+-            if (ret < 0)
+-                return ret;
+-            break;
+-#endif
+-        default:
+-            av_log(avctx, AV_LOG_ERROR, "AMF initialisation from a %s frames context is not supported.\n",
+-                   av_hwdevice_get_type_name(frames_ctx->device_ctx->type));
+-            return AVERROR(ENOSYS);
+-        }
++        ret = av_hwdevice_ctx_create_derived(&ctx->amf_device_ctx, AV_HWDEVICE_TYPE_AMF, frames_ctx->device_ref, 0);
++        if (ret < 0)
++            return ret;
+ 
+         ctx->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
+         if (!ctx->hw_frames_ctx)
+@@ -275,47 +124,23 @@ static int amf_init_context(AVCodecContext *avctx)
+             ctx->hwsurfaces_in_queue_max = frames_ctx->initial_pool_size - 1;
+ 
+     } else if (avctx->hw_device_ctx) {
+-        AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
+-
+-        switch (device_ctx->type) {
+-#if CONFIG_D3D11VA
+-        case AV_HWDEVICE_TYPE_D3D11VA:
+-            ret = amf_init_from_d3d11_device(avctx, device_ctx->hwctx);
+-            if (ret < 0)
+-                return ret;
+-            break;
+-#endif
+-#if CONFIG_DXVA2
+-        case AV_HWDEVICE_TYPE_DXVA2:
+-            ret = amf_init_from_dxva2_device(avctx, device_ctx->hwctx);
+-            if (ret < 0)
+-                return ret;
+-            break;
+-#endif
+-        default:
+-            av_log(avctx, AV_LOG_ERROR, "AMF initialisation from a %s device is not supported.\n",
+-                   av_hwdevice_get_type_name(device_ctx->type));
+-            return AVERROR(ENOSYS);
+-        }
++        ret = av_hwdevice_ctx_create_derived(&ctx->amf_device_ctx, AV_HWDEVICE_TYPE_AMF, avctx->hw_device_ctx, 0);
++        if (ret < 0)
++            return ret;
+ 
+         ctx->hw_device_ctx = av_buffer_ref(avctx->hw_device_ctx);
+         if (!ctx->hw_device_ctx)
+             return AVERROR(ENOMEM);
+ 
+     } else {
+-        res = ctx->context->pVtbl->InitDX11(ctx->context, NULL, AMF_DX11_1);
+-        if (res == AMF_OK) {
+-            av_log(avctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via D3D11.\n");
+-        } else {
+-            res = ctx->context->pVtbl->InitDX9(ctx->context, NULL);
+-            if (res == AMF_OK) {
+-                av_log(avctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via D3D9.\n");
+-            } else {
+-                av_log(avctx, AV_LOG_ERROR, "AMF initialisation failed via D3D9: error %d.\n", res);
+-                return AVERROR(ENOSYS);
+-            }
+-        }
++        ret = av_hwdevice_ctx_create(&ctx->amf_device_ctx, AV_HWDEVICE_TYPE_AMF, NULL, NULL, 0);
++        if (ret < 0)
++            return ret;
+     }
++
++    amf_ctx = ((AVHWDeviceContext*)ctx->amf_device_ctx->data)->hwctx;
++    ctx->context = amf_ctx->context;
++    ctx->factory = amf_ctx->factory;
+     return 0;
+ }
+ 
+@@ -368,29 +193,17 @@ int av_cold ff_amf_encode_close(AVCodecContext *avctx)
+         ctx->encoder = NULL;
+     }
+ 
+-    if (ctx->context) {
+-        ctx->context->pVtbl->Terminate(ctx->context);
+-        ctx->context->pVtbl->Release(ctx->context);
+-        ctx->context = NULL;
+-    }
+     av_buffer_unref(&ctx->hw_device_ctx);
+     av_buffer_unref(&ctx->hw_frames_ctx);
+ 
+-    if (ctx->trace) {
+-        ctx->trace->pVtbl->UnregisterWriter(ctx->trace, FFMPEG_AMF_WRITER_ID);
+-    }
+-    if (ctx->library) {
+-        dlclose(ctx->library);
+-        ctx->library = NULL;
+-    }
+-    ctx->trace = NULL;
+-    ctx->debug = NULL;
+     ctx->factory = NULL;
+-    ctx->version = 0;
++    ctx->context = NULL;
+     ctx->delayed_drain = 0;
+     av_frame_free(&ctx->delayed_frame);
+     av_fifo_freep(&ctx->timestamp_list);
+ 
++    av_buffer_unref(&ctx->amf_device_ctx);
++
+     return 0;
+ }
+ 
+@@ -494,11 +307,9 @@ int ff_amf_encode_init(AVCodecContext *avctx)
+ {
+     int ret;
+ 
+-    if ((ret = amf_load_library(avctx)) == 0) {
+-        if ((ret = amf_init_context(avctx)) == 0) {
+-            if ((ret = amf_init_encoder(avctx)) == 0) {
+-                return 0;
+-            }
++    if ((ret = amf_init_context(avctx)) == 0) {
++        if ((ret = amf_init_encoder(avctx)) == 0) {
++            return 0;
+         }
+     }
+     ff_amf_encode_close(avctx);
+diff --git a/libavcodec/amfenc.h b/libavcodec/amfenc.h
+index b1361842bd..9ce577fa8f 100644
+--- a/libavcodec/amfenc.h
++++ b/libavcodec/amfenc.h
+@@ -19,41 +19,26 @@
+ #ifndef AVCODEC_AMFENC_H
+ #define AVCODEC_AMFENC_H
+ 
+-#include <AMF/core/Factory.h>
+-
+ #include <AMF/components/VideoEncoderVCE.h>
+ #include <AMF/components/VideoEncoderHEVC.h>
+ 
+ #include "libavutil/fifo.h"
++#include "libavutil/hwcontext_amf.h"
+ 
+ #include "avcodec.h"
+ 
+ 
+-/**
+-* AMF trace writer callback class
+-* Used to capture all AMF logging
+-*/
+-
+-typedef struct AmfTraceWriter {
+-    AMFTraceWriterVtbl *vtbl;
+-    AVCodecContext     *avctx;
+-} AmfTraceWriter;
+-
+ /**
+ * AMF encoder context
+ */
+ 
+ typedef struct AmfContext {
+     AVClass            *avclass;
+-    // access to AMF runtime
+-    amf_handle          library; ///< handle to DLL library
+-    AMFFactory         *factory; ///< pointer to AMF factory
+-    AMFDebug           *debug;   ///< pointer to AMF debug interface
+-    AMFTrace           *trace;   ///< pointer to AMF trace interface
+-
+-    amf_uint64          version; ///< version of AMF runtime
+-    AmfTraceWriter      tracer;  ///< AMF writer registered with AMF
+-    AMFContext         *context; ///< AMF context
++
++    AMFContext         *context;
++    AMFFactory         *factory;
++    AVBufferRef        *amf_device_ctx;
++
+     //encoder
+     AMFComponent       *encoder; ///< AMF encoder object
+     amf_bool            eof;     ///< flag indicating EOF happened
+diff --git a/libavutil/Makefile b/libavutil/Makefile
+index a63ba523c9..34b858c606 100644
+--- a/libavutil/Makefile
++++ b/libavutil/Makefile
+@@ -168,6 +168,7 @@ OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
+ OBJS-$(CONFIG_VIDEOTOOLBOX)             += hwcontext_videotoolbox.o
+ OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
+ OBJS-$(CONFIG_MEDIACODEC)               += hwcontext_mediacodec.o
++OBJS-$(CONFIG_AMF)                      += hwcontext_amf.o
+ 
+ OBJS += $(COMPAT_OBJS:%=../compat/%)
+ 
+@@ -183,6 +184,7 @@ SKIPHEADERS-$(CONFIG_OPENCL)           += hwcontext_opencl.h
+ SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
+ SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += hwcontext_videotoolbox.h
+ SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
++SKIPHEADERS-$(CONFIG_AMF)              += hwcontext_amf.h
+ 
+ TESTPROGS = adler32                                                     \
+             aes                                                         \
+diff --git a/libavutil/hwcontext.c b/libavutil/hwcontext.c
+index 70c556ecac..decf2d3566 100644
+--- a/libavutil/hwcontext.c
++++ b/libavutil/hwcontext.c
+@@ -58,6 +58,9 @@ static const HWContextType * const hw_table[] = {
+ #endif
+ #if CONFIG_MEDIACODEC
+     &ff_hwcontext_type_mediacodec,
++#endif
++#if CONFIG_AMF
++    &ff_hwcontext_type_amf,
+ #endif
+     NULL,
+ };
+@@ -73,6 +76,7 @@ static const char *const hw_type_names[] = {
+     [AV_HWDEVICE_TYPE_VDPAU]  = "vdpau",
+     [AV_HWDEVICE_TYPE_VIDEOTOOLBOX] = "videotoolbox",
+     [AV_HWDEVICE_TYPE_MEDIACODEC] = "mediacodec",
++    [AV_HWDEVICE_TYPE_AMF] = "amf",
+ };
+ 
+ enum AVHWDeviceType av_hwdevice_find_type_by_name(const char *name)
+diff --git a/libavutil/hwcontext.h b/libavutil/hwcontext.h
+index f5a4b62387..b18591205a 100644
+--- a/libavutil/hwcontext.h
++++ b/libavutil/hwcontext.h
+@@ -36,6 +36,7 @@ enum AVHWDeviceType {
+     AV_HWDEVICE_TYPE_DRM,
+     AV_HWDEVICE_TYPE_OPENCL,
+     AV_HWDEVICE_TYPE_MEDIACODEC,
++    AV_HWDEVICE_TYPE_AMF,
+ };
+ 
+ typedef struct AVHWDeviceInternal AVHWDeviceInternal;
+diff --git a/libavutil/hwcontext_amf.c b/libavutil/hwcontext_amf.c
+new file mode 100644
+index 0000000000..20c13e2fbc
+--- /dev/null
++++ b/libavutil/hwcontext_amf.c
+@@ -0,0 +1,253 @@
++/*
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <string.h>
++
++#include "config.h"
++
++#include "avassert.h"
++#include "avstring.h"
++#include "common.h"
++#include "hwcontext.h"
++#include "hwcontext_internal.h"
++#include "hwcontext_amf.h"
++
++#if CONFIG_D3D11VA
++#include "libavutil/hwcontext_d3d11va.h"
++#endif
++
++#if CONFIG_DXVA2
++#define COBJMACROS
++#include "libavutil/hwcontext_dxva2.h"
++#endif
++
++#ifdef _WIN32
++#include "compat/w32dlfcn.h"
++#else
++#include <dlfcn.h>
++#endif
++
++/**
++* Error handling helper
++*/
++#define AMFAV_RETURN_IF_FALSE(avctx, exp, ret_value, /*message,*/ ...) \
++    if (!(exp)) { \
++        av_log(avctx, AV_LOG_ERROR, __VA_ARGS__); \
++        return ret_value; \
++    }
++
++typedef struct AmfTraceWriter {
++    const AMFTraceWriterVtbl    *vtbl;
++    void                        *avcl;
++} AmfTraceWriter;
++
++static void AMF_CDECL_CALL AMFTraceWriter_Write(AMFTraceWriter *pThis,
++    const wchar_t *scope, const wchar_t *message)
++{
++    AmfTraceWriter *tracer = (AmfTraceWriter*)pThis;
++    av_log(tracer->avcl, AV_LOG_DEBUG, "%ls: %ls", scope, message);
++}
++
++static void AMF_CDECL_CALL AMFTraceWriter_Flush(AMFTraceWriter *pThis)
++{
++}
++
++static const AMFTraceWriterVtbl tracer_vtbl =
++{
++    .Write = AMFTraceWriter_Write,
++    .Flush = AMFTraceWriter_Flush,
++};
++
++#define AMFAV_WRITER_ID L"avlog"
++
++typedef struct AMFDeviceContextPrivate {
++    amf_handle          library;
++    AMFDebug           *debug;
++    AMFTrace           *trace;
++    AmfTraceWriter      tracer;
++} AMFDeviceContextPrivate;
++
++static void amf_device_free(AVHWDeviceContext *ctx)
++{
++    AVAMFDeviceContext      *amf_ctx = ctx->hwctx;
++    AMFDeviceContextPrivate *priv = ctx->internal->priv;
++    if (amf_ctx->context) {
++        amf_ctx->context->pVtbl->Terminate(amf_ctx->context);
++        amf_ctx->context->pVtbl->Release(amf_ctx->context);
++        amf_ctx->context = NULL;
++    }
++    if(priv->library) {
++        dlclose(priv->library);
++    }
++}
++
++static int amf_init_device_ctx_object(AVHWDeviceContext *ctx)
++{
++    AVAMFDeviceContext         *hwctx = ctx->hwctx;
++    AMFDeviceContextPrivate    *priv = ctx->internal->priv;
++    AMF_RESULT                  res;
++    AMFInit_Fn                  init_fun;
++
++    ctx->free = amf_device_free;
++
++    priv->library = dlopen(AMF_DLL_NAMEA, RTLD_NOW | RTLD_LOCAL);
++    AMFAV_RETURN_IF_FALSE(ctx, priv->library != NULL, AVERROR_UNKNOWN, "DLL %s failed to open\n", AMF_DLL_NAMEA);
++
++    init_fun = (AMFInit_Fn)dlsym(priv->library, AMF_INIT_FUNCTION_NAME);
++    AMFAV_RETURN_IF_FALSE(ctx, init_fun != NULL, AVERROR_UNKNOWN, "DLL %s failed to find function %s\n", AMF_DLL_NAMEA, AMF_INIT_FUNCTION_NAME);
++
++    res = init_fun(AMF_FULL_VERSION, &hwctx->factory);
++    AMFAV_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "%s failed with error %d\n", AMF_INIT_FUNCTION_NAME, res);
++
++    res = hwctx->factory->pVtbl->GetTrace(hwctx->factory, &priv->trace);
++    AMFAV_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "GetTrace() failed with error %d\n", res);
++    res = hwctx->factory->pVtbl->GetDebug(hwctx->factory, &priv->debug);
++    AMFAV_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "GetDebug() failed with error %d\n", res);
++
++    priv->trace->pVtbl->EnableWriter(priv->trace, AMF_TRACE_WRITER_CONSOLE, 0);
++    priv->trace->pVtbl->SetGlobalLevel(priv->trace, AMF_TRACE_TRACE);
++
++    // connect AMF logger to av_log
++    priv->tracer.vtbl = &tracer_vtbl;
++    priv->tracer.avcl = ctx;
++    priv->trace->pVtbl->RegisterWriter(priv->trace, AMFAV_WRITER_ID, (AMFTraceWriter*)&priv->tracer, 1);
++    priv->trace->pVtbl->SetWriterLevel(priv->trace, AMFAV_WRITER_ID, AMF_TRACE_TRACE);
++
++    res = hwctx->factory->pVtbl->CreateContext(hwctx->factory, &hwctx->context);
++    AMFAV_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "CreateContext() failed with error %d\n", res);
++    return 0;
++}
++
++static int amf_device_create(AVHWDeviceContext *ctx, const char *device,
++                                AVDictionary *opts, int flags)
++{
++    AVAMFDeviceContext *amf_ctx = ctx->hwctx;
++    AMF_RESULT res;
++    int err;
++
++    err = amf_init_device_ctx_object(ctx);
++    if(err < 0)
++        return err;
++
++    res = amf_ctx->context->pVtbl->InitDX11(amf_ctx->context, NULL, AMF_DX11_1);
++    if (res == AMF_OK) {
++        av_log(ctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via D3D11.\n");
++    } else {
++        res = amf_ctx->context->pVtbl->InitDX9(amf_ctx->context, NULL);
++        if (res == AMF_OK) {
++            av_log(ctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via D3D9.\n");
++        } else {
++            av_log(ctx, AV_LOG_ERROR, "AMF initialisation failed via D3D9: error %d.\n", res);
++            return AVERROR(ENOSYS);
++        }
++    }
++    return 0;
++}
++
++static int amf_device_derive(AVHWDeviceContext *dst_ctx,
++                                AVHWDeviceContext *src_ctx,
++                                int flags)
++{
++    AVAMFDeviceContext *amf_ctx = dst_ctx->hwctx;
++    AMF_RESULT res;
++    int err;
++
++    err = amf_init_device_ctx_object(dst_ctx);
++    if(err < 0)
++        return err;
++
++    switch (src_ctx->type) {
++
++#if CONFIG_D3D11VA
++    case AV_HWDEVICE_TYPE_DXVA2:
++        {
++            AVDXVA2DeviceContext *dxva2_ctx = src_ctx->hwctx;
++            HANDLE device_handle;
++            IDirect3DDevice9 *device;
++            HRESULT hr;
++            AMF_RESULT res;
++            int ret;
++
++            hr = IDirect3DDeviceManager9_OpenDeviceHandle(dxva2_ctx->devmgr, &device_handle);
++            if (FAILED(hr)) {
++                av_log(dst_ctx, AV_LOG_ERROR, "Failed to open device handle for Direct3D9 device: %lx.\n", (unsigned long)hr);
++                return AVERROR_EXTERNAL;
++            }
++
++            hr = IDirect3DDeviceManager9_LockDevice(dxva2_ctx->devmgr, device_handle, &device, FALSE);
++            if (SUCCEEDED(hr)) {
++                IDirect3DDeviceManager9_UnlockDevice(dxva2_ctx->devmgr, device_handle, FALSE);
++                ret = 0;
++            } else {
++                av_log(dst_ctx, AV_LOG_ERROR, "Failed to lock device handle for Direct3D9 device: %lx.\n", (unsigned long)hr);
++                ret = AVERROR_EXTERNAL;
++            }
++
++            IDirect3DDeviceManager9_CloseDeviceHandle(dxva2_ctx->devmgr, device_handle);
++
++            if (ret < 0)
++                return ret;
++
++            res = amf_ctx->context->pVtbl->InitDX9(amf_ctx->context, device);
++
++            IDirect3DDevice9_Release(device);
++
++            if (res != AMF_OK) {
++                if (res == AMF_NOT_SUPPORTED)
++                    av_log(dst_ctx, AV_LOG_ERROR, "AMF via D3D9 is not supported on the given device.\n");
++                else
++                    av_log(dst_ctx, AV_LOG_ERROR, "AMF failed to initialise on given D3D9 device: %d.\n", res);
++                return AVERROR(ENODEV);
++            }
++        }
++        break;
++#endif
++
++#if CONFIG_D3D11VA
++    case AV_HWDEVICE_TYPE_D3D11VA:
++        {
++            AVD3D11VADeviceContext *d3d11_ctx = src_ctx->hwctx;
++            res = amf_ctx->context->pVtbl->InitDX11(amf_ctx->context, d3d11_ctx->device, AMF_DX11_1);
++            if (res != AMF_OK) {
++                if (res == AMF_NOT_SUPPORTED)
++                    av_log(dst_ctx, AV_LOG_ERROR, "AMF via D3D11 is not supported on the given device.\n");
++                else
++                    av_log(dst_ctx, AV_LOG_ERROR, "AMF failed to initialise on the given D3D11 device: %d.\n", res);
++                return AVERROR(ENODEV);
++            }
++        }
++        break;
++#endif
++    default:
++        av_log(dst_ctx, AV_LOG_ERROR, "AMF initialisation from a %s device is not supported.\n",
++                av_hwdevice_get_type_name(src_ctx->type));
++        return AVERROR(ENOSYS);
++    }
++    return 0;
++}
++
++const HWContextType ff_hwcontext_type_amf = {
++    .type                   = AV_HWDEVICE_TYPE_AMF,
++    .name                   = "AMF",
++
++    .device_hwctx_size      = sizeof(AVAMFDeviceContext),
++    .device_priv_size       = sizeof(AMFDeviceContextPrivate),
++
++    .device_create          = &amf_device_create,
++    .device_derive          = &amf_device_derive,
++};
+diff --git a/libavutil/hwcontext_amf.h b/libavutil/hwcontext_amf.h
+new file mode 100644
+index 0000000000..e4a620ad30
+--- /dev/null
++++ b/libavutil/hwcontext_amf.h
+@@ -0,0 +1,54 @@
++/*
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++
++#ifndef AVUTIL_HWCONTEXT_AMF_H
++#define AVUTIL_HWCONTEXT_AMF_H
++
++/**
++ * @file
++ * API-specific header for AV_HWDEVICE_TYPE_AMF.
++ *
++ */
++
++#include "frame.h"
++#include "AMF/core/Context.h"
++#include "AMF/core/Factory.h"
++
++
++/**
++ * This struct is allocated as AVHWDeviceContext.hwctx
++ */
++typedef struct AVAMFDeviceContext {
++    /**
++     * Context used for:
++     * texture and buffers allocation. 
++     * Access to device objects (DX9, DX11, OpenCL, OpenGL) which are being used in the context
++     */
++    AMFContext *context;
++
++    /**
++     * Factory used for:
++     * AMF component creation such as encoder, decoder, converter...
++     * Access AMF Library settings such as trace/debug/cache
++     */
++    AMFFactory *factory;
++} AVAMFDeviceContext;
++
++
++#endif /* AVUTIL_HWCONTEXT_AMF_H */
+diff --git a/libavutil/hwcontext_internal.h b/libavutil/hwcontext_internal.h
+index 332062ddaa..179797a936 100644
+--- a/libavutil/hwcontext_internal.h
++++ b/libavutil/hwcontext_internal.h
+@@ -167,5 +167,6 @@ extern const HWContextType ff_hwcontext_type_vaapi;
+ extern const HWContextType ff_hwcontext_type_vdpau;
+ extern const HWContextType ff_hwcontext_type_videotoolbox;
+ extern const HWContextType ff_hwcontext_type_mediacodec;
++extern const HWContextType ff_hwcontext_type_amf;
+ 
+ #endif /* AVUTIL_HWCONTEXT_INTERNAL_H */
+-- 
+2.16.2.windows.1
+
