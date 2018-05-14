@@ -11,7 +11,7 @@ it contains only restructurization for further patches with new amf components
 
 ---
 Sending updated patch based on Mark's review
-1) moved device free code from amf_device_free to amf_device_uninit
+1) moved device free code from amf_device_uninit to amf_device_free 
 2) added comments for AVAMFDeviceContext structure
 
 
