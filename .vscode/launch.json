@@ -25,12 +25,22 @@
 
             "args": ["-y", 
                 "-threads", "1",
-                //"-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", 
-                "-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", 
+                "-hide_banner",
+                //"-dumpgraph",
+                //"-y",
+                "-v", "verbose",
+//                "-init_hw_device", "d3d11va=dx1:0",
+//                "-init_hw_device", "amf@dx2",
+
+                "-hwaccel", "d3d11va", "-hwaccel_output_format", "d3d11", 
+                //"-hwaccel", "dxva2", "-hwaccel_output_format", "dxva2_vld", 
                 "-extra_hw_frames", "16", 
 
-                //"-i", "matrixbench_mpeg2.mpg", 
                 "-i", "nasa_720p.264", 
+                //"-i", "matrixbench_mpeg2.mpg", 
+
+                "-vf", "scale_amf",
+
                 "-an", "-c:v", "h264_amf", 
                 "out.mkv"],
     
