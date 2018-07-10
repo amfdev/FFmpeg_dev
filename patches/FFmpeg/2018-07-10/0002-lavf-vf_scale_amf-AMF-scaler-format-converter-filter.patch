@@ -5,6 +5,14 @@ Subject: [PATCH 2/2] lavf/vf_scale_amf: AMF scaler/format converter filter
  implementation
 
 ---
+Sending updated patch based on Mark's review
+1) added RGBA/BGRA
+2) in case is device_ctx is set there is only the device hw format will be allowed as input and output
+3) extended amf properties removed for now to have usual for ffmpeg scaler&format converter interface
+4) input frame colorspace is set as color profile to select conversion matrix in case YUV->RGB, user setting removed.
+5) misc bugs fixed
+
+
  configure                  |   1 +
  libavfilter/Makefile       |   1 +
  libavfilter/allfilters.c   |   1 +
