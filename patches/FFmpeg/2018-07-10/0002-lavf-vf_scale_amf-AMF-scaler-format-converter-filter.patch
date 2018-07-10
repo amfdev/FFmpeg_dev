@@ -1,6 +1,6 @@
-From c5e68dc4394e67c41938ad80042d6eafb534efa5 Mon Sep 17 00:00:00 2001
+From 81ab195bebe4e076bc05e9e032b1de114e2a079d Mon Sep 17 00:00:00 2001
 From: Alexander Kravchenko <akravchenko188@gmail.com>
-Date: Tue, 10 Jul 2018 14:56:25 +0300
+Date: Tue, 10 Jul 2018 15:33:18 +0300
 Subject: [PATCH 2/2] lavf/vf_scale_amf: AMF scaler/format converter filter
  implementation
 
@@ -16,8 +16,8 @@ Sending updated patch based on Mark's review
  configure                  |   1 +
  libavfilter/Makefile       |   1 +
  libavfilter/allfilters.c   |   1 +
- libavfilter/vf_scale_amf.c | 632 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 635 insertions(+)
+ libavfilter/vf_scale_amf.c | 623 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 626 insertions(+)
  create mode 100644 libavfilter/vf_scale_amf.c
 
 diff --git a/configure b/configure
@@ -58,10 +58,10 @@ index 0ded83ede2..7c7eb1526a 100644
  extern AVFilter ff_vf_scale_qsv;
 diff --git a/libavfilter/vf_scale_amf.c b/libavfilter/vf_scale_amf.c
 new file mode 100644
-index 0000000000..f1e640a4a9
+index 0000000000..49250281e5
 --- /dev/null
 +++ b/libavfilter/vf_scale_amf.c
-@@ -0,0 +1,632 @@
+@@ -0,0 +1,623 @@
 +/*
 + * This file is part of FFmpeg.
 + *
@@ -125,7 +125,6 @@ index 0000000000..f1e640a4a9
 +        ret = ret_value; \
 +        goto fail; \
 +    }
-+
 +
 +typedef struct FormatMap {
 +    enum AVPixelFormat       av_format;
@@ -378,7 +377,6 @@ index 0000000000..f1e640a4a9
 +    if (avctx->hw_device_ctx) {
 +        AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
 +
-+
 +        switch (device_ctx->type) {
 +    #if CONFIG_D3D11VA
 +        case AV_HWDEVICE_TYPE_D3D11VA:
@@ -413,8 +411,7 @@ index 0000000000..f1e640a4a9
 +
 +    input_formats = ff_make_format_list(output_pix_fmts);
 +    if (!input_formats) {
-+        err = AVERROR(ENOMEM);
-+        return err;
++        return AVERROR(ENOMEM);
 +    }
 +
 +    for (i = 0; input_pix_fmts[i] != AV_PIX_FMT_NONE; i++) {
@@ -440,8 +437,6 @@ index 0000000000..f1e640a4a9
 +    AVHWFramesContext *hwframes_out;
 +    enum AVPixelFormat pix_fmt_in;
 +    AMFSize out_size;
-+    AMFRect out_rect;
-+    AMFColor fill_color;
 +    int err;
 +    AMF_RESULT res;
 +
@@ -504,7 +499,7 @@ index 0000000000..f1e640a4a9
 +        return AVERROR(EINVAL);
 +    }
 +
-+    if(ctx->format != AV_PIX_FMT_NONE) {
++    if (ctx->format != AV_PIX_FMT_NONE) {
 +        hwframes_out->sw_format = ctx->format;
 +    }
 +
@@ -608,7 +603,7 @@ index 0000000000..f1e640a4a9
 +        break;
 +    }
 +
-+    if(amf_color_profile != AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN) {
++    if (amf_color_profile != AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN) {
 +        AMF_ASSIGN_PROPERTY_INT64(res, ctx->converter, AMF_VIDEO_CONVERTER_COLOR_PROFILE, amf_color_profile);
 +    }
 +
@@ -640,25 +635,21 @@ index 0000000000..f1e640a4a9
 +
 +#define OFFSET(x) offsetof(AMFScaleContext, x)
 +#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-+static const AVOption options[] = {
++static const AVOption scale_amf_options[] = {
 +    { "w",      "Output video width",               OFFSET(w_expr),     AV_OPT_TYPE_STRING, { .str = "iw"   }, .flags = FLAGS },
 +    { "h",      "Output video height",              OFFSET(h_expr),     AV_OPT_TYPE_STRING, { .str = "ih"   }, .flags = FLAGS },
 +    { "format", "Output pixel format",              OFFSET(format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
 +
 +    { "scale_type",    "Scale type",                OFFSET(scale_type),      AV_OPT_TYPE_INT,   { .i64 = AMF_VIDEO_CONVERTER_SCALE_BILINEAR },
 +        AMF_VIDEO_CONVERTER_SCALE_BILINEAR, AMF_VIDEO_CONVERTER_SCALE_BICUBIC, FLAGS, "scale_type" },
-+    { "bilinear",      "Bilinear",      0,                       AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_CONVERTER_SCALE_BILINEAR },       0, 0, FLAGS, "scale_type" },
-+    { "bicubic",       "Bicubic",       0,                       AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_CONVERTER_SCALE_BICUBIC },        0, 0, FLAGS, "scale_type" },
++    { "bilinear",      "Bilinear",      0,                       AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_CONVERTER_SCALE_BILINEAR }, 0, 0, FLAGS, "scale_type" },
++    { "bicubic",       "Bicubic",       0,                       AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_CONVERTER_SCALE_BICUBIC },  0, 0, FLAGS, "scale_type" },
 +
 +    { NULL },
 +};
 +
-+static const AVClass amf_scale_class = {
-+    .class_name = "amf_scale",
-+    .item_name  = av_default_item_name,
-+    .option     = options,
-+    .version    = LIBAVUTIL_VERSION_INT,
-+};
++
++AVFILTER_DEFINE_CLASS(scale_amf);
 +
 +static const AVFilterPad amf_scale_inputs[] = {
 +    {
@@ -687,7 +678,7 @@ index 0000000000..f1e640a4a9
 +    .query_formats = amf_scale_query_formats,
 +
 +    .priv_size = sizeof(AMFScaleContext),
-+    .priv_class = &amf_scale_class,
++    .priv_class = &scale_amf_class,
 +
 +    .inputs    = amf_scale_inputs,
 +    .outputs   = amf_scale_outputs,
