@@ -96,7 +96,7 @@ if [ "$COMPILER" == "gcc" ] && [ "$LIBNAME" == "ffmpeg" ]; then
         $debugflags --enable-gpl --enable-libx264 --enable-libx265 $amf_params --enable-sdl2 $ocl_params
     
     [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/libx265.dll ./
-    [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/bin/SDL2.dll ./
+    [ "$link" == "shared" ] && cp -v ${ARCH_DIR}/${TARGET}/../bin/SDL2.dll ./
     time.sh make -j${NPROC}
 fi
 if [ "$COMPILER" == "gcc" ] && [ "$LIBNAME" == "libav" ]; then
